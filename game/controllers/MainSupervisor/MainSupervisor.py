@@ -190,22 +190,18 @@ def getPath(number: int) -> str:
     # The current path to this python file
     filePath = os.path.dirname(os.path.abspath(__file__))
 
-    # Split into parts on \
-    pathParts = filePath.split("\\")
-
-    filePath = ""
-    # Add all parts back together
-    for part in pathParts:
-        # Except the last one
-        if part != pathParts[-1]:
-            # Concatenate with / not \ (prevents issues with escape characters)
-            filePath = filePath + part + "/"
+    # Go up one directory
+    filePath = os.path.dirname(filePath)
 
     # Controller number part added
     if number == 0:
-        filePath = filePath + "robot0Controller/robot0Controller.py"
+        filePath = os.path.join(filePath,
+                                "robot0Controller",
+                                "robot0Controller.py")
     elif number == 1:
-        filePath = filePath + "robot1Controller/robot1Controller.py"
+        filePath = os.path.join(filePath,
+                                "robot1Controller",
+                                "robot1Controller.py")
     else:
         # Returns none if id was not valid
         filePath = None
