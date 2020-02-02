@@ -28,7 +28,7 @@ objectPlacementOutput = supervisor.getFromDef(
     "OBJECTPLACER").getField("customData")
 
 # Get this supervisor node - so that it can be rest when game restarts
-mainSupervisor = supervisor.getFromDef("MAINSUPERVISOR")
+mainSupervisor = supervisor.getSelf()
 
 # Maximum time for a match
 maxTime = 120
