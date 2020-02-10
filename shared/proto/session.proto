@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package erebus;
+
+message Ping {
+	int32 nonce = 1;
+}
+
+message Pong {
+	int32 nonce = 1;
+}

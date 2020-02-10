@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package erebus;
+
+import "types.proto";
+
+message SensorType {
+	enum SensorType {
+		UNKNOWN = 0; // Dummy default / zero value
+		DISTANCE_SENSOR = 1; // WeBots DistanceSensor node
+		POSITION_SENSOR = 2; // WeBots PositionSensor node
+		INERTIAL_SENSOR = 3; // WeBots InertialUnit node
+		CAMERA_SENSOR = 4;   // WeBots Camera node
+		CAMERA_RECOGNITION_SENSOR = 5; // WeBots Recognition node
+	}
+}
+
+
+// Data from an individual sensor
+message SensorData {
+
+	// WeBots DistanceSensor node
+	message DistanceSensorData {
+		double value = 1;
+	}
+
+	// WeBots PositionSensor node
+	message PositionSensorData {
+		double value = 1;
+	}
+
+	// WeBots InertialUnit node
+	message InertialSensorData {
+		double roll = 1;
+		double pitch = 2;
+		double yaw = 3;
+	}
+
+	// WeBots Camera - recognition mode
+	message CameraRecogitionData {
+		message WbCameraRecognitionObject {
+			int32 id = 1;
+			CartesianInt32Pair position_on_image = 2;
+			CartesianInt32Pair size_on_image = 3;
+			repeated double colors = 4;
+		}
+
+		repeated WbCameraRecognitionObject objects = 1;
+	}
+
+	string name = 1; // The name of the sensor
+
+	oneof data {
+		DistanceSensorData distance_sensor_data = 2;
+		PositionSensorData position_sensor_data = 3;
+		CameraRecogitionData camera_recognition_data = 5;
+	}
+}
+
+message SensorSamplingPeriod {
+	string name = 1;
+	SensorType.SensorType type = 2;
+	int32 sampling_period = 3; // Sampling period (ms) - 0 means off
+}
+
+message SensorInfo {
+	string name = 1;
+	SensorType.SensorType type = 2;
+}
+
+message SensorsData {
+	repeated SensorData data = 1;
+	double timestamp = 2; // Time in seconds (equivalent to Robot.getTime())
+}
+
+message Command {
+
+	// WeBots Motor node
+	message MotorCommand {
+		double velocity = 1;
+	}
+
+	// WeBots LED node
+	message LEDCommand {
+		int32 state = 1;
+	}
+
+	string name = 1; // The name of the device
+
+	oneof command {
+		LEDCommand led_command = 2;
+		MotorCommand motor_command = 3;
+	}
+
+}
+
+message Commands {
+	repeated Command commands = 1;
+}
+
+message RobotInfo {
+	repeated SensorInfo sensor_infos = 1;
+
+	// TODO: add commandables (LED and motor) info
+}
+
+message SimState {
+	enum State {
+		UNKOWN = 0;
+		START = 1;
+		STOP = 2;
+		RESET = 3;
+	}
+
+	State state = 1;
+}

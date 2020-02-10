@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package erebus;
+
+import "sim.proto";
+import "session.proto";
+
+message WbControllerHandshake {
+	string robot_name = 1;
+	RobotInfo robot_info = 2;
+}
+
+message WbControllerHandshakeResponse {
+	message Ok {
+		int32 timestep = 1;
+	}
+
+	oneof data {
+		string error = 1;
+		Ok ok = 2;
+	}
+}
+
+message WbControllerBound {
+	bool is_sync = 1;
+}
+
+message WbControllerUnbound {
+}
+
+message WbControllerMessage {
+	message ClientMessage {
+		oneof message {
+			WbControllerHandshake wb_controller_handshake = 1;
+			Pong pong = 2;
+			SensorsData sensor_data = 3;
+		}
+	}
+
+	message ServerMessage {
+		oneof message {
+			WbControllerHandshakeResponse wb_controller_handshake_response = 1;
+			Ping ping = 2;
+			SimState sim_state_change = 3;
+			WbControllerBound wb_controller_bound = 4;
+			WbControllerUnbound wb_controller_unbound = 5;
+			Commands commands = 6;
+		}
+	}
+}
+
+service WbController {
+	rpc Session(stream WbControllerMessage.ClientMessage) returns (stream WbControllerMessage.ServerMessage);
+}

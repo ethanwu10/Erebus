@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package erebus;
+
+import "types.proto";
+import "sim.proto";
+
+message ControlMessage {
+	message GetRobotsResponse {
+		repeated string robotNames = 1;
+	}
+
+	message GetClientControllersResponse {
+		repeated string controllerNames = 1;
+	}
+
+	message SubscribeClientControllersMessage {
+		enum EventType {
+			UNKNOWN = 0;
+			JOINED = 1;
+			PARTED = 2;
+		}
+		EventType eventType = 1;
+		string controllerName = 2;
+	}
+
+	message ConnectClientToRobotRequest {
+		string clientName = 1;
+		string robotName = 2;
+	}
+
+	message ConnectClientToRobotResponse {
+		message Ok {
+		}
+
+		oneof data {
+			string error = 1;
+			Ok ok = 2;
+		}
+	}
+
+	message DisconnectClientFromRobotRequest {
+		string clientName = 1;
+	}
+
+	message DisconnectClientFromRobotResponse {
+		message Ok {
+		}
+
+		oneof data {
+			string error = 1;
+			Ok ok = 2;
+		}
+	}
+}
+
+service Control {
+	rpc GetRobots(Null) returns (ControlMessage.GetRobotsResponse);
+	rpc GetClientControllers(Null) returns (ControlMessage.GetClientControllersResponse);
+	rpc SubscribeClientControllers(Null) returns (stream ControlMessage.SubscribeClientControllersMessage);
+
+	rpc GetSimulationState(Null) returns (SimState);
+	rpc SubscribeSimulationState(Null) returns (stream SimState);
+	rpc SetSimulationState(SimState) returns (Null); // TODO: ok/err
+
+	rpc ConnectClientToRobot(ControlMessage.ConnectClientToRobotRequest) returns (ControlMessage.ConnectClientToRobotResponse);
+	rpc DisconnectClientFromRobot(ControlMessage.DisconnectClientFromRobotRequest) returns (ControlMessage.DisconnectClientFromRobotResponse);
+}

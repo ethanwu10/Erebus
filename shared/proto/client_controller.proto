@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+import "sim.proto";
+import "session.proto";
+
+package erebus;
+
+message ClientControllerHandshake {
+	string client_name = 1; // Identifier for this client
+	bool request_sync = 2; // True to request to block simulation until the client responds
+}
+
+message ClientControllerHandshakeResponse {
+	message Ok {
+		int32 timestep = 1;
+	}
+
+	oneof data {
+		string error = 1;
+		Ok ok = 2;
+	}
+}
+
+message ClientControllerBound {
+	bool is_sync = 1;
+	RobotInfo robot_info = 2;
+}
+
+message ClientControllerUnbound{
+}
+
+message ClientControllerMessage {
+	message ControllerMessage {
+		oneof message {
+			ClientControllerHandshake client_controller_handshake = 1;
+			Pong pong = 2;
+			Commands commands = 3;
+		}
+	}
+
+	message ServerMessage {
+		oneof message {
+			ClientControllerHandshakeResponse client_controller_handshake_response = 1;
+			Ping ping = 2;
+			SimState sim_state_change = 3;
+			SensorsData sensor_data = 4;
+			ClientControllerBound client_controller_bound = 5;
+			ClientControllerUnbound client_controller_unbound = 6;
+		}
+	}
+}
+
+service ClientController {
+	rpc Session(stream ClientControllerMessage.ControllerMessage) returns(stream ClientControllerMessage.ServerMessage);
+}
