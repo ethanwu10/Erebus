@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 
 	log "github.com/sirupsen/logrus"
 
@@ -29,7 +30,7 @@ func (s *ControlServer) GetClientControllers(context.Context, *pb.Null) (*pb.Con
 	return &pb.ControlMessage_GetClientControllersResponse{ControllerNames: s.broker.GetClientNames()}, nil
 }
 
-func (s *ControlServer) SubscribeClientControllers(*pb.Null, pb.Control_SubscribeClientControllersServer) error {
+func (s *ControlServer) SubscribeClientControllers(srv pb.Control_SubscribeClientControllersServer) error {
 	return errors.New("Not yet implemented")
 }
 
@@ -38,8 +39,28 @@ func (s *ControlServer) GetSimulationState(context.Context, *pb.Null) (*pb.SimSt
 	return &ss, nil
 }
 
-func (s *ControlServer) SubscribeSimulationState(*pb.Null, pb.Control_SubscribeSimulationStateServer) error {
-	return errors.New("Not yet implemented")
+func (s *ControlServer) SubscribeSimulationState(srv pb.Control_SubscribeSimulationStateServer) error {
+	done := make(chan error)
+	go func() {
+		_, err := srv.Recv()
+		if err == nil || err == io.EOF {
+			close(done)
+		} else {
+			done <- err
+			close(done)
+		}
+	}()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sscChan := s.broker.GetSimStateListener(ctx)
+	for {
+		select {
+		case ssc := <-sscChan:
+			srv.Send(ssc)
+		case err := <-done:
+			return err
+		}
+	}
 }
 
 func (s *ControlServer) SetSimulationState(_ context.Context, state *pb.SimState) (*pb.Null, error) {

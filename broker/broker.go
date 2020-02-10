@@ -12,7 +12,7 @@ import (
 
 type Broker struct {
 	ctx      context.Context
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	robots   map[string]*RobotHandle
 	clients  map[string]*ClientHandle
 	simInfo  SimInfo
@@ -21,7 +21,7 @@ type Broker struct {
 	connections        []connectionIdentifier
 	connectionContexts map[string]connectionContext
 
-	simStateListeners []chan<- *pb.SimState
+	simStateListeners map[chan<- *pb.SimState]struct{}
 }
 
 type connectionIdentifier struct {
@@ -70,9 +70,10 @@ type ClientConnection struct {
 // NewBroker creates a new broker instance
 func NewBroker(ctx context.Context, info SimInfo) *Broker {
 	return &Broker{
-		ctx:      ctx,
-		simInfo:  info,
-		simState: pb.SimState{State: pb.SimState_RESET},
+		ctx:               ctx,
+		simInfo:           info,
+		simState:          pb.SimState{State: pb.SimState_RESET},
+		simStateListeners: make(map[chan<- *pb.SimState]struct{}),
 	}
 }
 
@@ -181,7 +182,17 @@ func (b *Broker) ConnectClientToRobot(clientName string, robotName string, isSyn
 		SimStateChange: cConnSSC,
 		IsSync:         isSync,
 	}
-	b.simStateListeners = append(b.simStateListeners, rConnSSC, cConnSSC)
+	b.simStateListeners[rConnSSC] = struct{}{}
+	b.simStateListeners[cConnSSC] = struct{}{}
+	go func() {
+		<-ctx.Done()
+		close(rConnSSC)
+		close(cConnSSC)
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		delete(b.simStateListeners, rConnSSC)
+		delete(b.simStateListeners, cConnSSC)
+	}()
 	return nil
 }
 
@@ -196,8 +207,25 @@ func (b *Broker) DisconnectClientFromRobot(clientName string) error {
 	return nil
 }
 
+func (b *Broker) GetSimStateListener(ctx context.Context) <-chan *pb.SimState {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	ch := make(chan *pb.SimState)
+	b.simStateListeners[ch] = struct{}{}
+	go func() {
+		<-ctx.Done()
+		close(ch)
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		delete(b.simStateListeners, ch)
+	}()
+	return ch
+}
+
 // GetRobotNames returns the names of all registered robots
 func (b *Broker) GetRobotNames() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	names := make([]string, 0, len(b.robots))
 	for name := range b.robots {
 		names = append(names, name)
@@ -207,6 +235,8 @@ func (b *Broker) GetRobotNames() []string {
 
 // GetClientNames reutnrs the names of all registered clients
 func (b *Broker) GetClientNames() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	names := make([]string, 0, len(b.clients))
 	for name := range b.clients {
 		names = append(names, name)
@@ -216,13 +246,19 @@ func (b *Broker) GetClientNames() []string {
 
 // GetSimState gets the current simulation state
 func (b *Broker) GetSimState() pb.SimState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.simState
 }
 
 // SetSimState sets the simulation state
 func (b *Broker) SetSimState(state pb.SimState) {
-	// TODO: subscription logic
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.simState = state
+	for listener := range b.simStateListeners {
+		listener <- &state
+	}
 }
 
 // GetConnection blocks until a peer connection is established, returning the
