@@ -295,7 +295,9 @@ func (b *Broker) SetSimState(state pb.SimState) {
 	defer b.mu.Unlock()
 	b.simState = state
 	for listener := range b.simStateListeners {
-		listener <- &state
+		go func(listener chan<- *pb.SimState) {
+			listener <- &state
+		}(listener)
 	}
 }
 
