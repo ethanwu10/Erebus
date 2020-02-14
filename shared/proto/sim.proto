@@ -53,6 +53,7 @@ message SensorData {
 	oneof data {
 		DistanceSensorData distance_sensor_data = 2;
 		PositionSensorData position_sensor_data = 3;
+		InertialSensorData inertial_sensor_data = 4;
 		CameraRecogitionData camera_recognition_data = 5;
 	}
 }
