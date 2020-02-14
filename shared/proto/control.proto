@@ -57,10 +57,10 @@ message ControlMessage {
 service Control {
 	rpc GetRobots(Null) returns (ControlMessage.GetRobotsResponse);
 	rpc GetClientControllers(Null) returns (ControlMessage.GetClientControllersResponse);
-	rpc SubscribeClientControllers(stream Null) returns (stream ControlMessage.SubscribeClientControllersMessage);
+	rpc SubscribeClientControllers(Null) returns (stream ControlMessage.SubscribeClientControllersMessage);
 
 	rpc GetSimulationState(Null) returns (SimState);
-	rpc SubscribeSimulationState(stream Null) returns (stream SimState);
+	rpc SubscribeSimulationState(Null) returns (stream SimState);
 	rpc SetSimulationState(SimState) returns (Null); // TODO: ok/err
 
 	rpc ConnectClientToRobot(ControlMessage.ConnectClientToRobotRequest) returns (ControlMessage.ConnectClientToRobotResponse);

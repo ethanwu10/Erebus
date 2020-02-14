@@ -19,7 +19,7 @@ var simSubscribeCmd = &cobra.Command{
 Erebus instance`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getControlClient()
-		stream, err := client.SubscribeSimulationState(context.Background())
+		stream, err := client.SubscribeSimulationState(context.Background(), &pb.Null{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error getting simulation state")
 			fmt.Fprintln(os.Stderr, err.Error())

@@ -30,7 +30,7 @@ func (s *ControlServer) GetClientControllers(context.Context, *pb.Null) (*pb.Con
 	return &pb.ControlMessage_GetClientControllersResponse{ControllerNames: s.broker.GetClientNames()}, nil
 }
 
-func (s *ControlServer) SubscribeClientControllers(srv pb.Control_SubscribeClientControllersServer) error {
+func (s *ControlServer) SubscribeClientControllers(_ *pb.Null, srv pb.Control_SubscribeClientControllersServer) error {
 	return errors.New("Not yet implemented")
 }
 
@@ -39,7 +39,7 @@ func (s *ControlServer) GetSimulationState(context.Context, *pb.Null) (*pb.SimSt
 	return &ss, nil
 }
 
-func (s *ControlServer) SubscribeSimulationState(srv pb.Control_SubscribeSimulationStateServer) error {
+func (s *ControlServer) SubscribeSimulationState(_ *pb.Null, srv pb.Control_SubscribeSimulationStateServer) error {
 	done := make(chan error)
 	go func() {
 		_, err := srv.Recv()
