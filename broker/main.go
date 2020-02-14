@@ -8,11 +8,13 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	pb "github.com/ethanwu10/erebus/broker/gen"
 )
+
+var log *logrus.Logger
 
 func run(port int) {
 	netAddr := fmt.Sprintf(":%d", port)
@@ -21,7 +23,7 @@ func run(port int) {
 		log.Fatalf("Failed to listen on %s", netAddr)
 	}
 	log.Printf("Listening on %s", netAddr)
-	logrusEntry := log.NewEntry(log.New())
+	logrusEntry := logrus.NewEntry(log)
 	// Shared options for the logger, with a custom gRPC code to log level function.
 	opts := []grpc_logrus.Option{}
 	grpc_logrus.ReplaceGrpcLogger(logrusEntry)
@@ -40,6 +42,7 @@ func run(port int) {
 }
 
 func main() {
+	log = logrus.New()
 	port := flag.Int("port", 51512, "port to listen on")
 	flag.Parse()
 	run(*port)

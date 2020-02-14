@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	pb "github.com/ethanwu10/erebus/broker/gen"
 )
@@ -90,7 +90,7 @@ func (b *Broker) RegisterRobot(name string) *RobotHandle {
 		broker:   b,
 	}
 	b.robots[name] = &handle
-	log.WithFields(log.Fields{
+	log.WithFields(logrus.Fields{
 		"robot": name,
 	}).Info("Robot registered")
 	return &handle
@@ -105,7 +105,7 @@ func (b *Broker) UnregisterRobot(name string) error {
 	}
 	delete(b.robots, name)
 	// TODO: kill client connections
-	log.WithFields(log.Fields{
+	log.WithFields(logrus.Fields{
 		"robot": name,
 	}).Info("Robot unregistered")
 	return nil
@@ -125,7 +125,7 @@ func (b *Broker) RegisterClient(name string, requestsSync bool) *ClientHandle {
 		connBind:     connBind,
 	}
 	b.clients[name] = &handle
-	log.WithFields(log.Fields{
+	log.WithFields(logrus.Fields{
 		"client": name,
 	}).Info("Client registered")
 	return &handle
@@ -140,7 +140,7 @@ func (b *Broker) UnregisterClient(name string) error {
 	}
 	delete(b.clients, name)
 	// TODO: kill connections
-	log.WithFields(log.Fields{
+	log.WithFields(logrus.Fields{
 		"client": name,
 	}).Info("Client unregistered")
 	return nil

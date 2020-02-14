@@ -5,12 +5,12 @@ import (
 	"errors"
 	"io"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	pb "github.com/ethanwu10/erebus/broker/gen"
 )
 
-var _ = log.WithFields // FIXME
+var _ = logrus.New // FIXME
 
 type ControlServer struct {
 	pb.UnimplementedControlServer

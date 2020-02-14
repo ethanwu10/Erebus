@@ -3,7 +3,7 @@ package main
 import (
 	"io"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	pb "github.com/ethanwu10/erebus/broker/gen"
 )
@@ -22,7 +22,7 @@ func (s *ClientControllerServer) Session(srv pb.ClientController_SessionServer) 
 	hasInitialized := false
 	var clientHandle *ClientHandle
 	var name string
-	var logger *log.Entry
+	var logger *logrus.Entry
 	for !hasInitialized {
 		msg, err := srv.Recv()
 		if err == io.EOF {
@@ -35,7 +35,7 @@ func (s *ClientControllerServer) Session(srv pb.ClientController_SessionServer) 
 		case *pb.ClientControllerMessage_ControllerMessage_ClientControllerHandshake:
 			handshake := msg.GetClientControllerHandshake()
 			name = handshake.GetClientName()
-			logger = log.WithFields(log.Fields{
+			logger = log.WithFields(logrus.Fields{
 				"client": name,
 			})
 			clientHandle := s.broker.RegisterClient(name, handshake.GetRequestSync())

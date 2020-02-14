@@ -3,7 +3,7 @@ package main
 import (
 	"io"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	pb "github.com/ethanwu10/erebus/broker/gen"
 )
@@ -22,7 +22,7 @@ func (s *WbControllerServer) Session(srv pb.WbController_SessionServer) error {
 	hasInitialized := false
 	var robotHandle *RobotHandle
 	var name string
-	var logger *log.Entry
+	var logger *logrus.Entry
 	for !hasInitialized {
 		msg, err := srv.Recv()
 		if err == io.EOF {
@@ -34,7 +34,7 @@ func (s *WbControllerServer) Session(srv pb.WbController_SessionServer) error {
 		switch msg.Message.(type) {
 		case *pb.WbControllerMessage_ClientMessage_WbControllerHandshake:
 			name = msg.GetWbControllerHandshake().GetRobotName()
-			logger = log.WithFields(log.Fields{
+			logger = log.WithFields(logrus.Fields{
 				"robot": name,
 			})
 			// TODO: handle RobotInfo
