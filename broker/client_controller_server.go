@@ -38,7 +38,7 @@ func (s *ClientControllerServer) Session(srv pb.ClientController_SessionServer) 
 			logger = log.WithFields(logrus.Fields{
 				"client": name,
 			})
-			clientHandle := s.broker.RegisterClient(name, handshake.GetRequestSync())
+			clientHandle = s.broker.RegisterClient(name, srv.Context(), handshake.GetRequestSync())
 			if clientHandle == nil {
 				srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerHandshakeResponse{
 					ClientControllerHandshakeResponse: &pb.ClientControllerHandshakeResponse{Data: &pb.ClientControllerHandshakeResponse_Error{
@@ -57,11 +57,15 @@ func (s *ClientControllerServer) Session(srv pb.ClientController_SessionServer) 
 				}},
 			}})
 			logger.Info("Client connected")
-			defer s.broker.UnregisterClient(name)
 		}
 	}
 	for {
-		connection := clientHandle.GetConnection()
+		var connection ClientConnection
+		select {
+		case connection = <-clientHandle.GetConnection():
+		case <-srv.Context().Done():
+			return nil
+		}
 		srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerBound{
 			ClientControllerBound: &pb.ClientControllerBound{IsSync: connection.IsSync},
 		}})

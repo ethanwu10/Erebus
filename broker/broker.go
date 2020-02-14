@@ -38,12 +38,18 @@ type SimInfo struct {
 	timestep int
 }
 
+// RobotHandle represents a connected robot to the broker
 type RobotHandle struct {
+	ctx      context.Context
+	cancel   context.CancelFunc
 	broker   *Broker
 	connBind chan RobotConnection
 }
 
+// ClientHandle represents a connected client to the broker
 type ClientHandle struct {
+	ctx          context.Context
+	cancel       context.CancelFunc
 	broker       *Broker
 	requestsSync bool
 	connBind     chan ClientConnection
@@ -70,26 +76,41 @@ type ClientConnection struct {
 // NewBroker creates a new broker instance
 func NewBroker(ctx context.Context, info SimInfo) *Broker {
 	return &Broker{
-		ctx:               ctx,
-		simInfo:           info,
-		simState:          pb.SimState{State: pb.SimState_RESET},
-		simStateListeners: make(map[chan<- *pb.SimState]struct{}),
+		ctx:                ctx,
+		simInfo:            info,
+		robots:             make(map[string]*RobotHandle),
+		clients:            make(map[string]*ClientHandle),
+		simState:           pb.SimState{State: pb.SimState_RESET},
+		connectionContexts: make(map[string]connectionContext),
+		simStateListeners:  make(map[chan<- *pb.SimState]struct{}),
 	}
 }
 
 // RegisterRobot registers a new robot with the given name
-func (b *Broker) RegisterRobot(name string) *RobotHandle {
+func (b *Broker) RegisterRobot(name string, ctx context.Context) *RobotHandle {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if _, ok := b.robots[name]; ok {
 		return nil
 	}
+	ctx, cancel := context.WithCancel(ctx)
 	connBind := make(chan RobotConnection)
 	handle := RobotHandle{
+		ctx:      ctx,
+		cancel:   cancel,
 		connBind: connBind,
 		broker:   b,
 	}
 	b.robots[name] = &handle
+	go func() {
+		<-ctx.Done()
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		delete(b.robots, name)
+		log.WithFields(logrus.Fields{
+			"robot": name,
+		}).Info("Robot unregistered")
+	}()
 	log.WithFields(logrus.Fields{
 		"robot": name,
 	}).Info("Robot registered")
@@ -98,33 +119,43 @@ func (b *Broker) RegisterRobot(name string) *RobotHandle {
 
 // UnregisterRobot unregisters an already-registered robot with the given name
 func (b *Broker) UnregisterRobot(name string) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	if _, ok := b.robots[name]; !ok {
 		return errors.New("Robot not registered")
 	}
-	delete(b.robots, name)
-	// TODO: kill client connections
-	log.WithFields(logrus.Fields{
-		"robot": name,
-	}).Info("Robot unregistered")
+	ctx := b.robots[name].ctx
+	b.robots[name].cancel()
+	<-ctx.Done()
 	return nil
 }
 
 // RegisterClient registers a new client with the given name
-func (b *Broker) RegisterClient(name string, requestsSync bool) *ClientHandle {
+func (b *Broker) RegisterClient(name string, ctx context.Context, requestsSync bool) *ClientHandle {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if _, ok := b.clients[name]; ok {
 		return nil
 	}
+	ctx, cancel := context.WithCancel(ctx)
 	connBind := make(chan ClientConnection)
 	handle := ClientHandle{
+		ctx:          ctx,
+		cancel:       cancel,
 		broker:       b,
 		requestsSync: requestsSync,
 		connBind:     connBind,
 	}
 	b.clients[name] = &handle
+	go func() {
+		<-ctx.Done()
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		delete(b.clients, name)
+		log.WithFields(logrus.Fields{
+			"client": name,
+		}).Info("Client unregistered")
+	}()
 	log.WithFields(logrus.Fields{
 		"client": name,
 	}).Info("Client registered")
@@ -133,16 +164,14 @@ func (b *Broker) RegisterClient(name string, requestsSync bool) *ClientHandle {
 
 // UnregisterClient unregisters an already-registered client with the given name
 func (b *Broker) UnregisterClient(name string) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	if _, ok := b.clients[name]; !ok {
 		return errors.New("Client not registered")
 	}
-	delete(b.clients, name)
-	// TODO: kill connections
-	log.WithFields(logrus.Fields{
-		"client": name,
-	}).Info("Client unregistered")
+	ctx := b.clients[name].ctx
+	b.clients[name].cancel()
+	<-ctx.Done()
 	return nil
 }
 
@@ -158,6 +187,15 @@ func (b *Broker) ConnectClientToRobot(clientName string, robotName string, isSyn
 		return errors.New("Client not found")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-ctx.Done(): // prevent leaking goroutine
+		case <-robot.ctx.Done():
+			cancel()
+		case <-client.ctx.Done():
+			cancel()
+		}
+	}()
 	b.connections = append(b.connections,
 		connectionIdentifier{clientName: clientName, robotName: robotName},
 	)
@@ -261,14 +299,14 @@ func (b *Broker) SetSimState(state pb.SimState) {
 	}
 }
 
-// GetConnection blocks until a peer connection is established, returning the
-// connection
-func (r *RobotHandle) GetConnection() RobotConnection {
-	return <-r.connBind
+// GetConnection returns a channel where the connection will be sent once it is
+// established
+func (r *RobotHandle) GetConnection() <-chan RobotConnection {
+	return r.connBind
 }
 
-// GetConnection blocks until a peer connection is established, returning the
-// connection
-func (c *ClientHandle) GetConnection() ClientConnection {
-	return <-c.connBind
+// GetConnection returns a channel where the peer connection will be sent once
+// it is established
+func (c *ClientHandle) GetConnection() <-chan ClientConnection {
+	return c.connBind
 }

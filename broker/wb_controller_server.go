@@ -38,7 +38,7 @@ func (s *WbControllerServer) Session(srv pb.WbController_SessionServer) error {
 				"robot": name,
 			})
 			// TODO: handle RobotInfo
-			robotHandle = s.broker.RegisterRobot(name)
+			robotHandle = s.broker.RegisterRobot(name, srv.Context())
 			if robotHandle == nil {
 				srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerHandshakeResponse{
 					WbControllerHandshakeResponse: &pb.WbControllerHandshakeResponse{Data: &pb.WbControllerHandshakeResponse_Error{
@@ -55,11 +55,15 @@ func (s *WbControllerServer) Session(srv pb.WbController_SessionServer) error {
 				}},
 			}})
 			logger.Info("Robot connected")
-			defer s.broker.UnregisterRobot(name)
 		}
 	}
 	for {
-		connection := robotHandle.GetConnection()
+		var connection RobotConnection
+		select {
+		case connection = <-robotHandle.GetConnection():
+		case <-srv.Context().Done():
+			return nil
+		}
 		srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerBound{
 			WbControllerBound: &pb.WbControllerBound{IsSync: connection.IsSync},
 		}})

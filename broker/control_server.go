@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"io"
 
 	"github.com/sirupsen/logrus"
 
@@ -40,25 +39,14 @@ func (s *ControlServer) GetSimulationState(context.Context, *pb.Null) (*pb.SimSt
 }
 
 func (s *ControlServer) SubscribeSimulationState(_ *pb.Null, srv pb.Control_SubscribeSimulationStateServer) error {
-	done := make(chan error)
-	go func() {
-		_, err := srv.Recv()
-		if err == nil || err == io.EOF {
-			close(done)
-		} else {
-			done <- err
-			close(done)
-		}
-	}()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := srv.Context()
 	sscChan := s.broker.GetSimStateListener(ctx)
 	for {
 		select {
 		case ssc := <-sscChan:
 			srv.Send(ssc)
-		case err := <-done:
-			return err
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 }
