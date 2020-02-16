@@ -199,12 +199,18 @@ func (b *Broker) ConnectClientToRobot(clientName string, robotName string, isSyn
 	b.connections = append(b.connections,
 		connectionIdentifier{clientName: clientName, robotName: robotName},
 	)
+	go func() {
+		<-ctx.Done()
+		// TODO: remove entry from b.connections
+	}()
 	b.connectionContexts[clientName] = connectionContext{ctx: ctx, cancel: cancel}
 	// TODO: handle sync
 	// TODO: MITM channels for instrumentation
 	sdChan := make(chan *pb.SensorsData)
 	cmdChan := make(chan *pb.Commands)
-	rConnSSC := make(chan *pb.SimState)
+	b.mu.Unlock()
+	rConnSSC := b.GetSimStateListener(ctx)
+	b.mu.Lock()
 	robot.connBind <- RobotConnection{
 		Ctx:            ctx,
 		SdOut:          sdChan,
@@ -212,7 +218,9 @@ func (b *Broker) ConnectClientToRobot(clientName string, robotName string, isSyn
 		SimStateChange: rConnSSC,
 		IsSync:         isSync,
 	}
-	cConnSSC := make(chan *pb.SimState)
+	b.mu.Unlock()
+	cConnSSC := b.GetSimStateListener(ctx)
+	b.mu.Lock()
 	client.connBind <- ClientConnection{
 		Ctx:            ctx,
 		SdIn:           sdChan,
@@ -220,17 +228,6 @@ func (b *Broker) ConnectClientToRobot(clientName string, robotName string, isSyn
 		SimStateChange: cConnSSC,
 		IsSync:         isSync,
 	}
-	b.simStateListeners[rConnSSC] = struct{}{}
-	b.simStateListeners[cConnSSC] = struct{}{}
-	go func() {
-		<-ctx.Done()
-		close(rConnSSC)
-		close(cConnSSC)
-		b.mu.Lock()
-		defer b.mu.Unlock()
-		delete(b.simStateListeners, rConnSSC)
-		delete(b.simStateListeners, cConnSSC)
-	}()
 	return nil
 }
 

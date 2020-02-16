@@ -37,7 +37,7 @@ message SensorData {
 	}
 
 	// WeBots Camera - recognition mode
-	message CameraRecogitionData {
+	message CameraRecognitionData {
 		message WbCameraRecognitionObject {
 			int32 id = 1;
 			CartesianInt32Pair position_on_image = 2;
@@ -54,7 +54,7 @@ message SensorData {
 		DistanceSensorData distance_sensor_data = 2;
 		PositionSensorData position_sensor_data = 3;
 		InertialSensorData inertial_sensor_data = 4;
-		CameraRecogitionData camera_recognition_data = 5;
+		CameraRecognitionData camera_recognition_data = 5;
 	}
 }
 

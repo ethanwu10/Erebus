@@ -57,49 +57,71 @@ func (s *WbControllerServer) Session(srv pb.WbController_SessionServer) error {
 			logger.Info("Robot connected")
 		}
 	}
+	incoming := make(chan *pb.WbControllerMessage_ClientMessage)
+	go func() {
+		for {
+			msg, err := srv.Recv()
+			if err != nil {
+				// TODO: better handle incoming errors
+				close(incoming)
+				return
+			}
+			incoming <- msg
+		}
+	}()
 	for {
 		var connection RobotConnection
+		logger.Debug("Robot waiting for peer")
 		select {
 		case connection = <-robotHandle.GetConnection():
 		case <-srv.Context().Done():
 			return nil
 		}
-		srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerBound{
+		if err := srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerBound{
 			WbControllerBound: &pb.WbControllerBound{IsSync: connection.IsSync},
-		}})
-		sdOut := make(chan *pb.SensorsData)
-		closed := make(chan struct{})
-		go func() {
-			for {
-				msg, err := srv.Recv()
+		}}); err != nil {
+			logger.Errorf("Couldn't send bound message: %s", err.Error())
+			return err
+		}
+		logger.Debug("Robot got peer")
+	LBoundSession:
+		for {
+			select {
+			case controllerMsg, ok := <-incoming:
+				if !ok {
+					// Remote hung up
+					logger.Info("Robot disconnected")
+					return nil
+				}
+				if sd := controllerMsg.GetSensorData(); sd != nil {
+					connection.SdOut <- sd
+				}
+			case cmd, ok := <-connection.CmdIn:
+				if !ok {
+					continue
+				}
+				err := srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_Commands{Commands: cmd}})
 				if err != nil {
-					// TODO: better handle errors
-					close(closed)
-					return
+					logger.Errorf("Couldn't send commands message: %s", err.Error())
+					return err
 				}
-				select {
-				case <-connection.Ctx.Done():
-					return
-				default:
-					if sd := msg.GetSensorData(); sd != nil {
-						sdOut <- sd
-					}
+			case ssc, ok := <-connection.SimStateChange:
+				if !ok {
+					continue
 				}
+				err := srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_SimStateChange{SimStateChange: ssc}})
+				if err != nil {
+					logger.Errorf("Couldn't send sim state change message: %s", err.Error())
+					return err
+				}
+			case <-connection.Ctx.Done():
+				err := srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerUnbound{WbControllerUnbound: &pb.WbControllerUnbound{}}})
+				if err != nil {
+					logger.Errorf("Couldn't send unbound message: %s", err.Error())
+					return err
+				}
+				break LBoundSession
 			}
-		}()
-		select {
-		case sd := <-sdOut:
-			connection.SdOut <- sd
-		case cmd := <-connection.CmdIn:
-			srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_Commands{Commands: cmd}})
-		case ssc := <-connection.SimStateChange:
-			srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_SimStateChange{SimStateChange: ssc}})
-		case <-connection.Ctx.Done():
-			srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerUnbound{}})
-		case <-closed:
-			// Remote hung up
-			logger.Info("Robot disconnected")
-			return nil
 		}
 	}
 }

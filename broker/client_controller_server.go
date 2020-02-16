@@ -59,49 +59,71 @@ func (s *ClientControllerServer) Session(srv pb.ClientController_SessionServer) 
 			logger.Info("Client connected")
 		}
 	}
+	incoming := make(chan *pb.ClientControllerMessage_ControllerMessage)
+	go func() {
+		for {
+			msg, err := srv.Recv()
+			if err != nil {
+				// TODO: better handle incoming errors
+				close(incoming)
+				return
+			}
+			incoming <- msg
+		}
+	}()
 	for {
 		var connection ClientConnection
+		logger.Debug("Client waiting for peer")
 		select {
 		case connection = <-clientHandle.GetConnection():
 		case <-srv.Context().Done():
 			return nil
 		}
-		srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerBound{
+		if err := srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerBound{
 			ClientControllerBound: &pb.ClientControllerBound{IsSync: connection.IsSync},
-		}})
-		cmdOut := make(chan *pb.Commands)
-		closed := make(chan struct{})
-		go func() {
-			for {
-				msg, err := srv.Recv()
+		}}); err != nil {
+			logger.Errorf("Couldn't send bound message: %s", err.Error())
+			return err
+		}
+		logger.Debug("Client got peer")
+	LBoundSession:
+		for {
+			select {
+			case controllerMsg, ok := <-incoming:
+				if !ok {
+					// Remote hung up
+					logger.Info("Client disconnected")
+					return nil
+				}
+				if cmd := controllerMsg.GetCommands(); cmd != nil {
+					connection.CmdOut <- cmd
+				}
+			case sd, ok := <-connection.SdIn:
+				if !ok {
+					continue
+				}
+				err := srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_SensorData{SensorData: sd}})
 				if err != nil {
-					// TODO: better handle errors
-					close(closed)
-					return
+					logger.Errorf("Couldn't send sensor data message: %s", err.Error())
+					return err
 				}
-				select {
-				case <-connection.Ctx.Done():
-					return
-				default:
-					if cmd := msg.GetCommands(); cmd != nil {
-						cmdOut <- cmd
-					}
+			case ssc, ok := <-connection.SimStateChange:
+				if !ok {
+					continue
 				}
+				err := srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_SimStateChange{SimStateChange: ssc}})
+				if err != nil {
+					logger.Errorf("Couldn't send sim state change message: %s", err.Error())
+					return err
+				}
+			case <-connection.Ctx.Done():
+				err := srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerUnbound{ClientControllerUnbound: &pb.ClientControllerUnbound{}}})
+				if err != nil {
+					logger.Errorf("Couldn't send unbound message: %s", err.Error())
+					return err
+				}
+				break LBoundSession
 			}
-		}()
-		select {
-		case cmd := <-cmdOut:
-			connection.CmdOut <- cmd
-		case sd := <-connection.SdIn:
-			srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_SensorData{SensorData: sd}})
-		case ssc := <-connection.SimStateChange:
-			srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_SimStateChange{SimStateChange: ssc}})
-		case <-connection.Ctx.Done():
-			srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerUnbound{}})
-		case <-closed:
-			// Remote hung up
-			logger.Info("Client disconnected")
-			return nil
 		}
 	}
 }

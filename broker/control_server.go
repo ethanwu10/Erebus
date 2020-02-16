@@ -62,7 +62,7 @@ func (s *ControlServer) ConnectClientToRobot(_ context.Context, req *pb.ControlM
 	if err != nil {
 		return &pb.ControlMessage_ConnectClientToRobotResponse{Data: &pb.ControlMessage_ConnectClientToRobotResponse_Error{Error: err.Error()}}, nil
 	}
-	return &pb.ControlMessage_ConnectClientToRobotResponse{Data: &pb.ControlMessage_ConnectClientToRobotResponse_Ok_{}}, nil
+	return &pb.ControlMessage_ConnectClientToRobotResponse{Data: &pb.ControlMessage_ConnectClientToRobotResponse_Ok_{Ok: &pb.ControlMessage_ConnectClientToRobotResponse_Ok{}}}, nil
 }
 
 func (s *ControlServer) DisconnectClientFromRobot(_ context.Context, req *pb.ControlMessage_DisconnectClientFromRobotRequest) (*pb.ControlMessage_DisconnectClientFromRobotResponse, error) {
@@ -70,5 +70,5 @@ func (s *ControlServer) DisconnectClientFromRobot(_ context.Context, req *pb.Con
 	if err != nil {
 		return &pb.ControlMessage_DisconnectClientFromRobotResponse{Data: &pb.ControlMessage_DisconnectClientFromRobotResponse_Error{Error: err.Error()}}, nil
 	}
-	return &pb.ControlMessage_DisconnectClientFromRobotResponse{Data: &pb.ControlMessage_DisconnectClientFromRobotResponse_Ok_{}}, nil
+	return &pb.ControlMessage_DisconnectClientFromRobotResponse{Data: &pb.ControlMessage_DisconnectClientFromRobotResponse_Ok_{Ok: &pb.ControlMessage_DisconnectClientFromRobotResponse_Ok{}}}, nil
 }

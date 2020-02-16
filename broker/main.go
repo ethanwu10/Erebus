@@ -31,6 +31,9 @@ func run(port int) {
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_logrus.UnaryServerInterceptor(logrusEntry, opts...),
 		)),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_logrus.StreamServerInterceptor(logrusEntry, opts...),
+		)),
 	)
 	broker := NewBroker(context.Background(), SimInfo{
 		timestep: 32,
@@ -45,5 +48,8 @@ func main() {
 	log = logrus.New()
 	port := flag.Int("port", 51512, "port to listen on")
 	flag.Parse()
+
+	log.SetLevel(logrus.DebugLevel)
+
 	run(*port)
 }
