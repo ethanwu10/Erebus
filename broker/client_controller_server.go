@@ -49,13 +49,16 @@ func (s *ClientControllerServer) Session(srv pb.ClientController_SessionServer) 
 				return nil
 			}
 			hasInitialized = true
-			srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerHandshakeResponse{
+			if err := srv.Send(&pb.ClientControllerMessage_ServerMessage{Message: &pb.ClientControllerMessage_ServerMessage_ClientControllerHandshakeResponse{
 				ClientControllerHandshakeResponse: &pb.ClientControllerHandshakeResponse{Data: &pb.ClientControllerHandshakeResponse_Ok_{
 					Ok: &pb.ClientControllerHandshakeResponse_Ok{
 						Timestep: int32(s.broker.simInfo.timestep),
 					},
 				}},
-			}})
+			}}); err != nil {
+				logger.Errorf("Couldn't send handshake response: %s", err.Error())
+				return err
+			}
 			logger.Info("Client connected")
 		}
 	}

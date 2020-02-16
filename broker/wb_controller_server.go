@@ -49,11 +49,14 @@ func (s *WbControllerServer) Session(srv pb.WbController_SessionServer) error {
 				return nil
 			}
 			hasInitialized = true
-			srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerHandshakeResponse{
+			if err := srv.Send(&pb.WbControllerMessage_ServerMessage{Message: &pb.WbControllerMessage_ServerMessage_WbControllerHandshakeResponse{
 				WbControllerHandshakeResponse: &pb.WbControllerHandshakeResponse{Data: &pb.WbControllerHandshakeResponse_Ok_{
 					Ok: &pb.WbControllerHandshakeResponse_Ok{Timestep: int32(s.broker.simInfo.timestep)},
 				}},
-			}})
+			}}); err != nil {
+				logger.Errorf("Couldn't send handshake response: %s", err.Error())
+				return err
+			}
 			logger.Info("Robot connected")
 		}
 	}
