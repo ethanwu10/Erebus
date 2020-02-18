@@ -124,9 +124,7 @@ func (b *Broker) UnregisterRobot(name string) error {
 	if _, ok := b.robots[name]; !ok {
 		return errors.New("Robot not registered")
 	}
-	ctx := b.robots[name].ctx
 	b.robots[name].cancel()
-	<-ctx.Done()
 	return nil
 }
 
@@ -169,9 +167,7 @@ func (b *Broker) UnregisterClient(name string) error {
 	if _, ok := b.clients[name]; !ok {
 		return errors.New("Client not registered")
 	}
-	ctx := b.clients[name].ctx
 	b.clients[name].cancel()
-	<-ctx.Done()
 	return nil
 }
 
