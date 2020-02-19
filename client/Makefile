@@ -15,6 +15,10 @@ prepare: $$(PROTO_GEN_SRC)
 test: prepare
 	$(PYTHON) -m pytest
 
+.PHONY: cover
+cover: prepare
+	$(POETRY) run coverage run -m pytest
+
 .PHONY: proto
 proto: $$(PROTO_GEN_SRC)
 
