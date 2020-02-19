@@ -37,7 +37,7 @@ clean: cleanproto
 
 .PHONY: cover
 cover: $$(BUILDDEPS)
-	$(GO) test -race -coverprofile=coverage.out -covermode=atomic
+	$(GO) test -v -race -coverprofile=coverage.out -covermode=atomic
 
 # Plumbing / dependencies
 
