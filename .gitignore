@@ -1,3 +1,7 @@
+### Protobuf ###
+# Python generated files are excluded
+*_pb2*.py
+
 # Created by https://www.gitignore.io/api/go
 
 ### Go ###
