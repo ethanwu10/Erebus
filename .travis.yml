@@ -1,0 +1,40 @@
+stages:
+  - test
+
+_codecov_collect: &codecov_collect bash <(curl -s https://codecov.io/bash)
+
+_test_client_py: &test_client_py
+  language: python
+  install:
+    - pip install poetry codecov
+    - poetry --version
+    - (cd client && poetry install)
+  script:
+    - make -C client cover
+  after_success:
+    - (cd client && codecov)
+
+jobs:
+  include:
+    - stage: test
+      name: "Broker tests"
+      language: go
+      before_script:
+        # Assume generated code is up-to-date
+        - touch broker/gen/*.pb.go
+      script: make -C broker cover
+      after_success:
+        - *codecov_collect
+    - stage: test
+      <<: *test_client_py
+      name: "Python client tests 3.8"
+      python: "3.8" # Latest
+    - stage: test
+      <<: *test_client_py
+      name: "Python client tests 3.6"
+      python: "3.6" # Bionic (LTS)
+    - stage: test
+      <<: *test_client_py
+      name: "Python client tests 3.7"
+      python: "3.7"
+
