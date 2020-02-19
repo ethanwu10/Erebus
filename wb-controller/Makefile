@@ -1,13 +1,22 @@
 PYTHON = python
 PROTOC = $(PYTHON) -m grpc_tools.protoc
 
-.DEFAULT: prepare
+.DEFAULT_GOAL := prepare
+
+.SECONDEXPANSION:
+
+# General targets
 
 .PHONY: prepare
-prepare: proto
+prepare: $$(PROTO_GEN_SRC)
+
+.PHONY: proto
+proto: $$(PROTO_GEN_SRC)
 
 .PHONY: clean
 clean: cleanproto
+
+# Plumbing / dependencies
 
 PROTO_GEN_PATH = .
 
@@ -38,9 +47,6 @@ $(foreach pb,$(PROTOS),$(eval $(call \
 	protorule,$(basename $(notdir $(pb))),$(pb))))
 $(foreach pb,$(GRPC_PROTOS),$(eval $(call \
 	grpc_protorule,$(basename $(notdir $(pb))),$(pb))))
-
-.PHONY: proto
-proto: $(PROTO_GEN_SRC)
 
 .PHONY: cleanproto
 cleanproto:

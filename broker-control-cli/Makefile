@@ -5,14 +5,22 @@ PROTOC = protoc
 GO111MODULE := on
 export GO111MODULE
 
-.DEFAULT: build
+.DEFAULT_GOAL := build
+
+.SECONDEXPANSION:
+
+# General targets
 
 .PHONY: build
-build: builddeps
+build: $$(BUILDDEPS)
 	$(GO) build
 
-.PHONY: builddeps
-builddeps: proto
+.PHONY: proto
+proto: $$(PROTO_GEN_SRC)
+
+# Plumbing / dependencies
+
+BUILDDEPS = $(PROTO_GEN_SRC)
 
 PROTOS = \
 	../shared/proto/control.proto \
@@ -30,9 +38,6 @@ endef
 
 $(foreach pb,$(PROTOS),$(eval $(call \
 	protorule,$(basename $(notdir $(pb))),$(pb))))
-
-.PHONY: proto
-proto: $(PROTO_GEN_SRC)
 
 .PHONY: clean
 clean:

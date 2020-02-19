@@ -2,17 +2,26 @@ POETRY = poetry
 PYTHON = $(POETRY) run python
 PROTOC = $(PYTHON) -m grpc_tools.protoc
 
-.DEFAULT: prepare
+.DEFAULT_GOAL := prepare
+
+.SECONDEXPANSION:
+
+# General targets
 
 .PHONY: prepare
-prepare: proto
+prepare: $$(PROTO_GEN_SRC)
 
 .PHONY: test
 test: prepare
 	$(PYTHON) -m pytest
 
+.PHONY: proto
+proto: $$(PROTO_GEN_SRC)
+
 .PHONY: clean
 clean: cleanproto
+
+# Plumbing / dependencies
 
 PROTO_GEN_PATH = erebus/client
 
@@ -44,9 +53,6 @@ $(foreach pb,$(PROTOS),$(eval $(call \
 $(foreach pb,$(GRPC_PROTOS),$(eval $(call \
 	grpc_protorule,$(basename $(notdir $(pb))),$(pb))))
 
-.PHONY: proto
-proto: $(PROTO_GEN_SRC)
-
 .PHONY: cleanproto
 cleanproto:
-	rm -rf erebus/client/*_pb2*.py
+	rm -rf $(PROTO_GEN_PATH)/*_pb2*.py
