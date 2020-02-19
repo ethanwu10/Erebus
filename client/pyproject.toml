@@ -6,9 +6,10 @@ authors = ["Ethan Wu <ethanwu10@gmail.com>"]
 include = ["*_pb2*.py"]
 
 [tool.poetry.dependencies]
-python = "^3.5"
+python = "^3.6"
 grpcio = "^1.27.1"
 protobuf = "^3.11.3"
+dataclasses = { version = "^0.7", python = "~3.6" }
 
 [tool.poetry.dev-dependencies]
 grpcio-tools = "^1.27.1"
