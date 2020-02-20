@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/sirupsen/logrus"
 
 	pb "github.com/ethanwu10/erebus/broker/gen"
@@ -13,87 +15,77 @@ import (
 const closeTimeout = 10 * time.Millisecond
 
 func init() {
-	log = logrus.New()
+	if log == nil {
+		log = logrus.New()
+	}
 }
 
-func TestUnregisterRobot(t *testing.T) {
-	globalCtx, globalCtxClose := context.WithCancel(context.Background())
-	broker := NewBroker(globalCtx, SimInfo{timestep: 32})
+type BrokerSuite struct {
+	suite.Suite
+	globalCtx      context.Context
+	globalCtxClose context.CancelFunc
+	broker         *Broker
+}
+
+func (suite *BrokerSuite) SetupTest() {
+	suite.globalCtx, suite.globalCtxClose = context.WithCancel(context.Background())
+	suite.broker = NewBroker(suite.globalCtx, SimInfo{timestep: 32})
+}
+
+func (suite *BrokerSuite) TestUnregisterRobot() {
 	robotEnclCtx, robotEnclCtxClose := context.WithCancel(context.Background())
-	handle := broker.RegisterRobot("robot", robotEnclCtx)
-	broker.UnregisterRobot("robot")
+	handle := suite.broker.RegisterRobot("robot", robotEnclCtx)
+	suite.broker.UnregisterRobot("robot")
 	<-handle.ctx.Done()
 	time.Sleep(closeTimeout)
-	robots := broker.GetRobotNames()
-	for _, robot := range robots {
-		if robot == "robot" {
-			t.Error("Robot was not removed from robots list")
-		}
-	}
+	robots := suite.broker.GetRobotNames()
+	suite.NotContainsf(robots, "robot", "Robot was not removed from robots list")
 	robotEnclCtxClose()
-	globalCtxClose()
+	suite.globalCtxClose()
 }
 
-func TestRobotAutoUnregister(t *testing.T) {
-	globalCtx, globalCtxClose := context.WithCancel(context.Background())
-	broker := NewBroker(globalCtx, SimInfo{timestep: 32})
+func (suite *BrokerSuite) TestRobotAutoUnregister() {
 	robotEnclCtx, robotEnclCtxClose := context.WithCancel(context.Background())
-	broker.RegisterRobot("robot", robotEnclCtx)
+	suite.broker.RegisterRobot("robot", robotEnclCtx)
 	robotEnclCtxClose()
 	time.Sleep(closeTimeout)
-	robots := broker.GetRobotNames()
-	for _, robot := range robots {
-		if robot == "robot" {
-			t.Error("Robot was not removed from robots list")
-		}
-	}
-	globalCtxClose()
+	robots := suite.broker.GetRobotNames()
+	suite.NotContainsf(robots, "robot", "Robot was not removed from robots list")
+	suite.globalCtxClose()
 }
 
-func TestUnregisterClient(t *testing.T) {
-	globalCtx, globalCtxClose := context.WithCancel(context.Background())
-	broker := NewBroker(globalCtx, SimInfo{timestep: 32})
+func (suite *BrokerSuite) TestUnregisterClient() {
 	clientEnclCtx, clientEnclCtxClose := context.WithCancel(context.Background())
-	handle := broker.RegisterClient("client", clientEnclCtx, false)
-	broker.UnregisterClient("client")
+	handle := suite.broker.RegisterClient("client", clientEnclCtx, false)
+	suite.broker.UnregisterClient("client")
 	<-handle.ctx.Done()
 	time.Sleep(closeTimeout)
-	clients := broker.GetClientNames()
-	for _, client := range clients {
-		if client == "client" {
-			t.Error("Client was not removed from clients list")
-		}
-	}
+	clients := suite.broker.GetClientNames()
+	suite.NotContainsf(clients, "client", "Client was not removed from clients list")
 	clientEnclCtxClose()
-	globalCtxClose()
+	suite.globalCtxClose()
 }
 
-func TestClientAutoUnregister(t *testing.T) {
-	globalCtx, globalCtxClose := context.WithCancel(context.Background())
-	broker := NewBroker(globalCtx, SimInfo{timestep: 32})
+func (suite *BrokerSuite) TestClientAutoUnregister() {
 	clientEnclCtx, clientEnclCtxClose := context.WithCancel(context.Background())
-	broker.RegisterClient("client", clientEnclCtx, false)
+	suite.broker.RegisterClient("client", clientEnclCtx, false)
 	clientEnclCtxClose()
 	time.Sleep(closeTimeout)
-	clients := broker.GetClientNames()
-	for _, client := range clients {
-		if client == "client" {
-			t.Error("Client was not removed from clients list")
-		}
-	}
-	globalCtxClose()
+	clients := suite.broker.GetClientNames()
+	suite.NotContainsf(clients, "client", "Client was not removed from clients list")
+	suite.globalCtxClose()
 }
 
-func TestSimStateListener(t *testing.T) {
-	globalCtx, globalCtxClose := context.WithCancel(context.Background())
-	broker := NewBroker(globalCtx, SimInfo{timestep: 32})
+func (suite *BrokerSuite) TestSimStateListener() {
 	listenerCtx, listenerCtxClose := context.WithCancel(context.Background())
-	listener := broker.GetSimStateListener(listenerCtx)
+	listener := suite.broker.GetSimStateListener(listenerCtx)
 	state := pb.SimState{State: pb.SimState_START}
-	broker.SetSimState(state)
-	if got := <-listener; got.GetState() != state.GetState() {
-		t.Errorf("Didn't get expected state: received %s", got)
-	}
+	suite.broker.SetSimState(state)
+	suite.Equal(state.GetState(), (<-listener).GetState())
 	listenerCtxClose()
-	globalCtxClose()
+	suite.globalCtxClose()
+}
+
+func TestBrokerSuite(t *testing.T) {
+	suite.Run(t, new(BrokerSuite))
 }
