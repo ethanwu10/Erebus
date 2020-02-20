@@ -14,7 +14,7 @@ import (
 
 // simSetCmd represents the set command
 var simSetCmd = &cobra.Command{
-	Use:   "set",
+	Use:   "set (start|stop|reset)",
 	Short: "Set the current sim state",
 	Long:  `Set the current state of the simulation in the running Erebus instance`,
 	Args: func(cmd *cobra.Command, args []string) error {

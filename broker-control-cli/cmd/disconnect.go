@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -12,16 +11,11 @@ import (
 
 // disconnectCmd represents the disconnect command
 var disconnectCmd = &cobra.Command{
-	Use:   "disconnect",
+	Use:   "disconnect CLIENT",
 	Short: "Disconnect a client from a robot",
 	Long: `Disconnect a client to the Erebus instance from a robot on the Erebus
 instance.`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("expected 1 argument (client name)")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getControlClient()
 		rArgs := &pb.ControlMessage_DisconnectClientFromRobotRequest{

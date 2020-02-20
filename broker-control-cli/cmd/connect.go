@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -13,16 +12,11 @@ import (
 
 // connectCmd represents the connect command
 var connectCmd = &cobra.Command{
-	Use:   "connect",
+	Use:   "connect CLIENT ROBOT",
 	Short: "Connect a client to a robot",
 	Long: `Connect a client to the Erebus instance with a robot on the Erebus
 instance.`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return errors.New("expected 2 arguments (client and robot)")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getControlClient()
 		rArgs := &pb.ControlMessage_ConnectClientToRobotRequest{

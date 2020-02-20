@@ -43,7 +43,7 @@ func init() {
 
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.broker-control-cli.yaml)")
 
-	rootCmd.PersistentFlags().StringVar(&server, "server", "localhost:51512", "Erebus server to connect to")
+	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:51512", "Erebus server to connect to")
 }
 
 // initConfig reads in config file and ENV variables if set.

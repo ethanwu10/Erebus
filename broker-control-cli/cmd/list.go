@@ -14,7 +14,7 @@ import (
 
 // getCmd represents the get command
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list (robot|client)",
 	Short: "List objects (robots and clients)",
 	Long: `List objects (robots and clients) that are currently connected to this
 Erebus instance`,
