@@ -32,9 +32,23 @@ func (suite *BrokerSuite) SetupTest() {
 	suite.broker = NewBroker(suite.globalCtx, SimInfo{timestep: 32})
 }
 
+func (suite *BrokerSuite) TestRegisterDuplicateRobot() {
+	robotEnclCtx, robotEnclCtxClose := context.WithCancel(context.Background())
+	suite.Require().NotNil(suite.broker.RegisterRobot("robot", robotEnclCtx))
+	suite.Nil(suite.broker.RegisterRobot("robot", robotEnclCtx))
+	robotEnclCtxClose()
+	suite.globalCtxClose()
+}
+
+func (suite *BrokerSuite) TestUnregisterNonexistantRobot() {
+	suite.Error(suite.broker.UnregisterRobot("nonexistant"))
+	suite.globalCtxClose()
+}
+
 func (suite *BrokerSuite) TestUnregisterRobot() {
 	robotEnclCtx, robotEnclCtxClose := context.WithCancel(context.Background())
 	handle := suite.broker.RegisterRobot("robot", robotEnclCtx)
+	suite.Require().NotNil(handle)
 	suite.broker.UnregisterRobot("robot")
 	<-handle.ctx.Done()
 	time.Sleep(closeTimeout)
@@ -46,7 +60,7 @@ func (suite *BrokerSuite) TestUnregisterRobot() {
 
 func (suite *BrokerSuite) TestRobotAutoUnregister() {
 	robotEnclCtx, robotEnclCtxClose := context.WithCancel(context.Background())
-	suite.broker.RegisterRobot("robot", robotEnclCtx)
+	suite.Require().NotNil(suite.broker.RegisterRobot("robot", robotEnclCtx))
 	robotEnclCtxClose()
 	time.Sleep(closeTimeout)
 	robots := suite.broker.GetRobotNames()
@@ -54,9 +68,23 @@ func (suite *BrokerSuite) TestRobotAutoUnregister() {
 	suite.globalCtxClose()
 }
 
+func (suite *BrokerSuite) TestRegisterDuplicateClient() {
+	clientEnclCtx, clientEnclCtxClose := context.WithCancel(context.Background())
+	suite.Require().NotNil(suite.broker.RegisterClient("client", clientEnclCtx, false))
+	suite.Nil(suite.broker.RegisterClient("client", clientEnclCtx, false))
+	clientEnclCtxClose()
+	suite.globalCtxClose()
+}
+
+func (suite *BrokerSuite) TestUnregisterNonexistantClient() {
+	suite.Error(suite.broker.UnregisterClient("nonexistant"))
+	suite.globalCtxClose()
+}
+
 func (suite *BrokerSuite) TestUnregisterClient() {
 	clientEnclCtx, clientEnclCtxClose := context.WithCancel(context.Background())
 	handle := suite.broker.RegisterClient("client", clientEnclCtx, false)
+	suite.Require().NotNil(handle)
 	suite.broker.UnregisterClient("client")
 	<-handle.ctx.Done()
 	time.Sleep(closeTimeout)
@@ -68,7 +96,7 @@ func (suite *BrokerSuite) TestUnregisterClient() {
 
 func (suite *BrokerSuite) TestClientAutoUnregister() {
 	clientEnclCtx, clientEnclCtxClose := context.WithCancel(context.Background())
-	suite.broker.RegisterClient("client", clientEnclCtx, false)
+	suite.Require().NotNil(suite.broker.RegisterClient("client", clientEnclCtx, false))
 	clientEnclCtxClose()
 	time.Sleep(closeTimeout)
 	clients := suite.broker.GetClientNames()
@@ -79,6 +107,7 @@ func (suite *BrokerSuite) TestClientAutoUnregister() {
 func (suite *BrokerSuite) TestSimStateListener() {
 	listenerCtx, listenerCtxClose := context.WithCancel(context.Background())
 	listener := suite.broker.GetSimStateListener(listenerCtx)
+	suite.Require().NotNil(listener)
 	state := pb.SimState{State: pb.SimState_START}
 	suite.broker.SetSimState(state)
 	suite.Equal(state.GetState(), (<-listener).GetState())
