@@ -8,11 +8,11 @@ _test_client_py: &test_client_py
   install:
     - pip install poetry codecov
     - poetry --version
-    - (cd client && poetry install)
+    - (cd client/python && poetry install)
   script:
-    - make -C client cover
+    - make -C client/python cover
   after_success:
-    - (cd client && codecov)
+    - (cd client/python && codecov)
 
 jobs:
   include:
