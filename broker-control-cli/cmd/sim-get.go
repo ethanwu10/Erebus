@@ -30,7 +30,7 @@ var simGetCmd = &cobra.Command{
 			fmt.Println("started")
 		case pb.SimState_STOP:
 			fmt.Println("paused")
-		case pb.SimState_UNKOWN:
+		case pb.SimState_UNKNOWN:
 			fallthrough
 		default:
 			fmt.Println("[unknown]")
