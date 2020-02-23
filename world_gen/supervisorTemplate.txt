@@ -9,3 +9,9 @@ DEF OBJECTPLACER Robot {
   controller "ObjectPlacementSupervisor"
   supervisor TRUE
 }
+
+DEF EREBUSSUPERVISOR Robot {
+  name "ErebusBrokerSupervisor"
+  controller "erebus-supervisor-controller"
+  supervisor TRUE
+}

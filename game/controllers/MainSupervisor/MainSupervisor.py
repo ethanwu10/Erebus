@@ -1,11 +1,14 @@
 """Supervisor Controller Prototype v5
    Written by Robbie Goldman and Alfred Roberts
+   Modified by Ethan Wu
 
 Changelog:
  - Only get points if you have a human loaded and enter a base
  - Robots can only pick up one human at a time
  - Robot must have stopped for 2 seconds to deposit and pick up human
  - Added check for message from position supervisor before taking human positions
+
+ - Remove clock controls and contoller restarting
 """
 
 from controller import Supervisor
@@ -294,18 +297,8 @@ lastTime = -1
 # Send message to robot window to perform setup
 supervisor.wwiSendText("startup")
 
-# For checking the first update with the game running
-first = True
-
 # Until the match ends (also while paused)
 while simulationRunning:
-
-    # The first frame of the game running only
-    if first and currentlyRunning:
-        # Restart both controllers
-        robot0.restartController()
-        robot1.restartController()
-        first = False
 
     r0 = False
     r1 = False
@@ -473,17 +466,15 @@ while simulationRunning:
         finished = True
         supervisor.wwiSendText("ended")
 
-    # If the match is running
-    if currentlyRunning and not finished:
-        # Get the time since the last frame
-        frameTime = supervisor.getTime() - lastTime
-        # Add to the elapsed time
-        timeElapsed = timeElapsed + frameTime
-        # Get the current time
-        lastTime = supervisor.getTime()
-        # Step the simulation on
-        step = supervisor.step(32)
-        # If the simulation is terminated or the time is up
-        if step == -1:
-            # Stop simulating
-            simulationRunning = False
+    # Get the time since the last frame
+    frameTime = supervisor.getTime() - lastTime
+    # Add to the elapsed time
+    timeElapsed = timeElapsed + frameTime
+    # Get the current time
+    lastTime = supervisor.getTime()
+    # Step the simulation on
+    step = supervisor.step(32)
+    # If the simulation is terminated or the time is up
+    if step == -1:
+        # Stop simulating
+        simulationRunning = False

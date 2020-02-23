@@ -923,7 +923,7 @@ DEF WALLGROUP Group {
 DEF ROBOT0 Pioneer3dx {
   translation 8.55 0.0975 3.8500000000000005
   name "robot0"
-  controller "robot0Controller"
+  controller "erebus-robot-controller"
   extensionSlot [
     Camera {
       translation 0.04 0.24 0
@@ -936,7 +936,7 @@ DEF ROBOT0 Pioneer3dx {
 DEF ROBOT1 Pioneer3dx {
   translation 4.750000000000001 0.0975 -6.85
   name "robot1"
-  controller "robot1Controller"
+  controller "erebus-robot-controller"
   extensionSlot [
     Camera {
       translation 0.04 0.24 0
@@ -1524,5 +1524,10 @@ DEF MAINSUPERVISOR Robot {
 DEF OBJECTPLACER Robot {
   name "ObjectPlacementSupervisor"
   controller "ObjectPlacementSupervisor"
+  supervisor TRUE
+}
+DEF EREBUSSUPERVISOR Robot {
+  name "ErebusBrokerSupervisor"
+  controller "erebus-supervisor-controller"
   supervisor TRUE
 }
