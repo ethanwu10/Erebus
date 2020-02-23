@@ -27,8 +27,10 @@ def findBrokerExecutable():
     if arch == 'x86_64':
         arch = 'amd64'
     os = platform.system().lower()
-    return path.join(path.dirname(path.abspath(__file__)),
-                     "broker_{os}_{arch}".format(os=os, arch=arch))
+    exe = 'broker_{os}_{arch}'.format(os=os, arch=arch)
+    if os == 'windows':
+        exe += '.exe'
+    return path.join(path.dirname(path.abspath(__file__)), exe)
 
 
 simStateCV = Condition()
