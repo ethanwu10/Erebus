@@ -107,7 +107,7 @@ message RobotInfo {
 
 message SimState {
 	enum State {
-		UNKOWN = 0;
+		UNKNOWN = 0;
 		START = 1;
 		STOP = 2;
 		RESET = 3;
