@@ -179,7 +179,7 @@ def main():
     ticker = None
     syncChannel = None
     try:
-        call = stub.Session(iter(sendQueue.get, None))
+        call = stub.Session(iter(sendQueue.get, None), wait_for_ready=True)
 
         def cancel():
             nonlocal call
