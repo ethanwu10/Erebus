@@ -4,6 +4,7 @@ import grpc
 from . import client_controller_pb2_grpc
 from . import client_controller_pb2
 from . import session_pb2
+from . import sim_pb2
 from .sensors import Sensors
 from .commands import Commands
 from .behavior import Behavior
@@ -30,6 +31,10 @@ class WorkerThread(threading.Thread):
             if serverMsg.HasField('client_controller_unbound'):
                 self.behaviorObj = None
                 print('robot unbound')
+            if serverMsg.HasField('sim_state_change'):
+                simState = serverMsg.sim_state_change
+                if simState.state == sim_pb2.SimState.RESET:
+                    self.behaviorObj = self.behaviorClass()
             # TODO: handle sim_state_change
             if serverMsg.HasField('ping'):
                 pong = client_controller_pb2.ClientControllerMessage.\
