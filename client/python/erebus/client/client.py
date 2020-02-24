@@ -52,10 +52,17 @@ class WorkerThread(threading.Thread):
 
 class Client:
     def __init__(self, behaviorClass: Behavior, name: str):
+        """
+        Create an Erebus client using the provided name and behavior class
+        """
         self.behaviorClass = behaviorClass
         self.name = name
 
     def run(self, address='127.0.0.1:51512'):
+        """
+        Run the client and connect to the broker server at the provided IP
+        address and port
+        """
         channel = grpc.insecure_channel(address)
         stub = client_controller_pb2_grpc.ClientControllerStub(channel)
         inQueue = queue.Queue()
