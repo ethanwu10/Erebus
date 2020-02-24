@@ -6,10 +6,11 @@ from . import client_controller_pb2
 from . import session_pb2
 from .sensors import Sensors
 from .commands import Commands
+from .behavior import Behavior
 
 
 class WorkerThread(threading.Thread):
-    def __init__(self, behaviorClass,
+    def __init__(self, behaviorClass: Behavior,
                  inQueue: queue.Queue, outQueue: queue.Queue,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,7 +46,7 @@ class WorkerThread(threading.Thread):
 
 
 class Client:
-    def __init__(self, behaviorClass, name):
+    def __init__(self, behaviorClass: Behavior, name: str):
         self.behaviorClass = behaviorClass
         self.name = name
 
