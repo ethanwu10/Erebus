@@ -68,7 +68,8 @@ class Client:
         wt = WorkerThread(self.behaviorClass, inQueue, outQueue)
         wt.start()
         try:
-            for serverMsg in stub.Session(iter(outQueue.get, None)):
+            for serverMsg in stub.Session(iter(outQueue.get, None),
+                                          wait_for_ready=True):
                 inQueue.put(serverMsg)
         finally:
             inQueue.put(None)
