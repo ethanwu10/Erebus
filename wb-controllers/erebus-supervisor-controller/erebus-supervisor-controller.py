@@ -92,9 +92,11 @@ class WbtTicker(Thread):
                 ):
                     if simulationShouldReset:
                         print('resetting')
-                        self.supervisor.simulationReset()
                         self.supervisor.simulationSetMode(
-                            Supervisor.SIMULATION_MODE_RUN)
+                            Supervisor.SIMULATION_MODE_REAL_TIME)
+                        self.supervisor.simulationReset()
+                        # avoid Webots step race condition
+                        time.sleep(self.step / 1000)
                         self.supervisor.step(self.step)
                         self.supervisor.simulationSetMode(
                             Supervisor.SIMULATION_MODE_PAUSE)
