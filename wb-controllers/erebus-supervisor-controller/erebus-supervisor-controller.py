@@ -140,7 +140,9 @@ class SimStateHandler(Thread):
 
     def run(self):
         setSimulationState(
-            self.supervisor, self.stub.GetSimulationState(types_pb2.Null()))
+            self.supervisor,
+            self.stub.GetSimulationState(types_pb2.Null(), wait_for_ready=True)
+        )
         for simState in self.call:
             setSimulationState(self.supervisor, simState)
 
