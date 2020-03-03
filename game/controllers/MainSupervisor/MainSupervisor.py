@@ -283,8 +283,8 @@ simulationRunning = True
 finished = False
 
 # Reset the controllers
-resetControllerFile(0)
-resetControllerFile(1)
+# resetControllerFile(0)
+# resetControllerFile(1)
 
 # Starting scores
 #score0 = 0
