@@ -12,6 +12,7 @@ A controller's behavior is defined as a class inheriting from
 :code:`erebus.client.Behavior` and implementing the class's :code:`tick()` method:
 
 .. code-block:: python
+
     class Behavior(erebus.client.Behavior):
         def tick(self, sensorData, commands):
             # Your code here
