@@ -232,7 +232,7 @@ func (b *Broker) DisconnectClientFromRobot(clientName string) error {
 	defer b.mu.Unlock()
 	connCtx, ok := b.connectionContexts[clientName]
 	if !ok {
-		return errors.New("Client not connnected")
+		return errors.New("Client not connected")
 	}
 	connCtx.cancel()
 	return nil
@@ -264,7 +264,7 @@ func (b *Broker) GetRobotNames() []string {
 	return names
 }
 
-// GetClientNames reutnrs the names of all registered clients
+// GetClientNames returns the names of all registered clients
 func (b *Broker) GetClientNames() []string {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
