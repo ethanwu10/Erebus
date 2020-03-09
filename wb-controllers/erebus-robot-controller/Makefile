@@ -1,5 +1,5 @@
-PYTHON = python
-PROTOC = $(PYTHON) -m grpc_tools.protoc
+PYTHON ?= python
+PROTOC ?= $(PYTHON) -m grpc_tools.protoc
 
 .DEFAULT_GOAL := prepare
 

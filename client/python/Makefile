@@ -1,6 +1,6 @@
-POETRY = poetry
-PYTHON = $(POETRY) run python
-PROTOC = $(PYTHON) -m grpc_tools.protoc
+POETRY ?= poetry
+PYTHON ?= $(POETRY) run python
+PROTOC ?= $(PYTHON) -m grpc_tools.protoc
 
 .DEFAULT_GOAL := prepare
 

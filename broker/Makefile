@@ -1,6 +1,6 @@
-GO = go
-PROTOC = protoc
-GOX = gox
+GO ?= go
+PROTOC ?= protoc
+GOX ?= gox
 
 CROSS_ARCH = amd64
 CROSS_OS = linux darwin windows
