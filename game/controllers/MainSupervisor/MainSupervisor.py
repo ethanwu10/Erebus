@@ -8,7 +8,8 @@ Changelog:
  - Robot must have stopped for 2 seconds to deposit and pick up human
  - Added check for message from position supervisor before taking human positions
 
- - Remove clock controls and contoller restarting
+ - Remove clock controls and controller restarting
+ - Remove robot controller handling
 """
 
 from controller import Supervisor
@@ -188,81 +189,6 @@ for i in range(0, 3):
     bases.append(baseObj)
 
 
-def getPath(number: int) -> str:
-    '''Get the path to the correct controller'''
-    # The current path to this python file
-    filePath = os.path.dirname(os.path.abspath(__file__))
-
-    # Go up one directory
-    filePath = os.path.dirname(filePath)
-
-    # Controller number part added
-    if number == 0:
-        filePath = os.path.join(filePath,
-                                "robot0Controller",
-                                "robot0Controller.py")
-    elif number == 1:
-        filePath = os.path.join(filePath,
-                                "robot1Controller",
-                                "robot1Controller.py")
-    else:
-        # Returns none if id was not valid
-        filePath = None
-
-    return filePath
-
-
-def resetControllerFile(number: int) -> None:
-    '''Open the controller at the file location and blanks it'''
-    filePath = getPath(number)
-
-    if filePath is not None:
-        controllerFile = open(filePath, "w")
-        controllerFile.close()
-
-
-def createController(number: int, fileData: list) -> list:
-    '''Opens the controller at the file location and writes the data to it'''
-    filePath = getPath(number)
-
-    if filePath is None:
-        return None, None
-
-    controllerFile = open(filePath, "w")
-    controllerFile.write(fileData)
-    controllerFile.close()
-
-    # If there is a name in the file
-    if "RobotName:" in fileData:
-        # Find the name
-        name = fileData[fileData.index("RobotName:") + 10:]
-        name = name.split("\n")[0]
-        # Return data with a name
-        return name, number
-    # Return data without a name
-    return None, number
-
-
-def assignController(num: int, name: str) -> None:
-    '''Send message to robot window to say that controller has loaded and with what name'''
-    if name is None:
-        name = "None"
-    if num == 0:
-        supervisor.wwiSendText("loaded0," + name)
-    if num == 1:
-        supervisor.wwiSendText("loaded1," + name)
-
-
-def resetController(num: int) -> None:
-    '''Send message to robot window to say that controller has been unloaded'''
-    if num == 0:
-        resetControllerFile(0)
-        supervisor.wwiSendText("unloaded0")
-    if num == 1:
-        resetControllerFile(1)
-        supervisor.wwiSendText("unloaded1")
-
-
 # Not currently running the match
 currentlyRunning = False
 previousRunState = False
@@ -418,40 +344,11 @@ while simulationRunning:
                 # Pause the match
                 currentlyRunning = False
             if parts[0] == "reset":
-                # Reset both controller files
-                resetControllerFile(0)
-                resetControllerFile(1)
                 # Reset the simulation
                 supervisor.simulationReset()
                 simulationRunning = False
                 # Restart this supervisor
                 mainSupervisor.restartController()
-            if parts[0] == "robot0File":
-                # Load the robot 0 controller
-                if not gameStarted:
-                    data = message.split(",", 1)
-                    if len(data) > 1:
-                        name, id = createController(0, data[1])
-                        assignController(id, name)
-                else:
-                    print("Please choose controllers before simulation starts.")
-            if parts[0] == "robot1File":
-                # Load the robot 1 controller
-                if not gameStarted:
-                    data = message.split(",", 1)
-                    if len(data) > 1:
-                        name, id = createController(1, data[1])
-                        assignController(id, name)
-                else:
-                    print("Please choose controllers before simulation starts.")
-            if parts[0] == "robot0Unload":
-                # Unload the robot 0 controller
-                if not gameStarted:
-                    resetController(0)
-            if parts[0] == "robot1Unload":
-                # Unload the robot 1 controller
-                if not gameStarted:
-                    resetController(1)
 
     # Send the update information to the robot window
     supervisor.wwiSendText("update," +
